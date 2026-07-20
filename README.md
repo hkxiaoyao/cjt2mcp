@@ -79,7 +79,7 @@ docker compose up -d --build
 pip install -r requirements.txt
 export $(grep -v '^#' .env | xargs)   # 或用 direnv
 uvicorn app.main:app --reload
-pytest                                # 41 项测试
+pytest                                # 46 项测试
 ```
 
 ---
@@ -92,6 +92,32 @@ pytest                                # 41 项测试
 4. 生成 MCP Key，勾选所需权限（库存/档案/销售/采购）。
 5. 「测试连接」验证链路（身份→凭据→appTicket→token→业务接口）。
 6. 一键复制 WorkBuddy MCP 配置，交付客户。
+
+---
+
+## 可信域名（畅捷通拨测）
+
+畅捷通平台会不定期拨测 `http://<可信域名>/CHANJET_CHECK.txt` 校验域名所有权。本服务按请求 **Host 头**区分租户，返回各自的验证文件内容，因此多个租户可各用独立子域名、互不干扰。
+
+每个租户的配置步骤：
+
+1. **后台配置**：详情页「可信域名」卡片，填域名（如 `sdfx.hacka.cn`，可带端口），上传从畅捷通控制台下载的 `CHANJET_CHECK.txt`（或直接粘贴内容）。上传新文件即覆盖，只改域名不会清空已存内容。
+2. **Nginx 反代**：把该域名反代到本服务，**必须透传 Host 头**（服务靠它分流）：
+   ```nginx
+   server {
+       server_name sdfx.hacka.cn;
+       location / {
+           proxy_pass http://127.0.0.1:8002;
+           proxy_set_header Host $host;   # 必须：按域名定位租户
+       }
+   }
+   ```
+3. **畅捷通控制台**：在「可信域名」里填入 `sdfx.hacka.cn`，平台拨测 `http://sdfx.hacka.cn/CHANJET_CHECK.txt` 命中该租户内容即验证通过。
+
+要点：
+- 文件名固定为 `CHANJET_CHECK.txt`（畅捷通硬性要求，不可改名）。
+- 每个一级域名只能被一个 ISV 认领，务必**一租户一子域名**。
+- 每个 ISV 最多 5 个可信域名，不够需联系畅捷通客服扩容。
 
 ---
 
