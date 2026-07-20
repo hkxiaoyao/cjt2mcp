@@ -1,0 +1,207 @@
+{% extends "dash.html" %}
+{% set active = "tenants" %}
+
+{% block title %}{{ tenant.client_name }}{% endblock %}
+{% block heading %}
+  <h2 style="margin:0;font-size:18px;">
+    {{ tenant.client_name }}
+    <span class="muted" style="font-size:13px;">{{ tenant.client_code }}</span>
+  </h2>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:16px;">
+  <a href="/admin/tenants" class="btn btn-sm">← 返回列表</a>
+</div>
+
+{% if new_key %}
+<div class="card" style="border:1px solid #2e7d32;background:#f3faf3;">
+  <h3 style="font-size:15px;margin:0 0 12px;color:#2e7d32;">MCP Key 创建成功</h3>
+  <p class="muted" style="margin:0 0 10px;">该完整 Key 仅显示这一次，关闭后无法再次查看。请立即复制保存。</p>
+  <div class="form-row">
+    <label>{{ new_key.client_name }} · 完整 MCP Key</label>
+    <pre id="new-key">{{ new_key.plain_key }}</pre>
+  </div>
+  <button class="btn btn-primary btn-sm" onclick="copyText(document.getElementById('new-key').innerText, this)">复制 MCP Key</button>
+  <button class="btn btn-sm" onclick="copyConfig()">复制完整配置</button>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3 style="font-size:15px;margin:0 0 16px;">基本信息</h3>
+  <table style="box-shadow:none;">
+    <tr><th style="width:160px;">客户编码</th><td class="mono">{{ tenant.client_code }}</td></tr>
+    <tr><th>客户名称</th><td>{{ tenant.client_name }}</td></tr>
+    <tr><th>联系人</th><td>{{ tenant.contact or '—' }}</td></tr>
+    <tr><th>联系电话</th><td>{{ tenant.phone or '—' }}</td></tr>
+    <tr><th>备注</th><td>{{ tenant.remark or '—' }}</td></tr>
+    <tr><th>MCP 状态</th><td>
+      {% if tenant.enabled %}<span class="tag tag-ok">正常</span>
+      {% else %}<span class="tag tag-off">已停用</span>{% endif %}
+    </td></tr>
+    <tr><th>授权状态</th><td>
+      {% if tenant.auth_status == 'authorized' %}<span class="tag tag-ok">已授权</span>
+      {% elif tenant.auth_status == 'expired' %}<span class="tag tag-warn">授权失效</span>
+      {% else %}<span class="tag tag-warn">待授权</span>{% endif %}
+    </td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3 style="font-size:15px;margin:0 0 16px;">畅捷通自建应用凭据</h3>
+  <table style="box-shadow:none;">
+    <tr><th style="width:200px;">AppKey</th><td class="mono">{{ tenant.app_key or '—' }}</td></tr>
+    <tr><th>AppSecret</th><td>
+      {% if cred_status.app_secret %}<span class="tag tag-ok">已配置</span>
+      {% else %}<span class="tag tag-off">未配置</span>{% endif %}
+      <span class="muted">（加密存储，不回显）</span>
+    </td></tr>
+    <tr><th>消息秘钥</th><td>
+      {% if cred_status.msg_secret %}<span class="tag tag-ok">已配置</span>
+      {% else %}<span class="tag tag-off">未配置</span>{% endif %}
+      <span class="muted">（加密存储，不回显）</span>
+    </td></tr>
+    <tr><th>certificate</th><td>
+      {% if cred_status.certificate %}<span class="tag tag-ok">已配置</span>
+      {% else %}<span class="tag tag-off">未配置</span>{% endif %}
+      <span class="muted">（加密存储，不回显）</span>
+    </td></tr>
+  </table>
+  <details style="margin-top:12px;">
+    <summary style="cursor:pointer;color:#2f6fed;">更新凭据</summary>
+    <form method="post" action="/admin/tenants/{{ tenant.id }}/credentials" style="margin-top:12px;">
+      <p class="muted" style="margin:0 0 12px;">留空表示不修改该项；填写则覆盖（敏感字段加密存储）。</p>
+      <div class="form-row"><label>AppKey</label><input name="app_key" value="{{ tenant.app_key or '' }}"></div>
+      <div class="form-row"><label>AppSecret</label><input name="app_secret" placeholder="留空不改"></div>
+      <div class="form-row"><label>消息秘钥</label><input name="msg_secret" placeholder="留空不改"></div>
+      <div class="form-row"><label>certificate</label><textarea name="certificate" rows="3" placeholder="留空不改"></textarea></div>
+      <button class="btn btn-primary btn-sm" type="submit">保存凭据</button>
+    </form>
+  </details>
+</div>
+
+<div class="card">
+  <h3 style="font-size:15px;margin:0 0 16px;">对接地址</h3>
+  <div class="form-row">
+    <label>消息接收地址（填入该租户自建应用「消息订阅」菜单）</label>
+    <pre id="webhook-url">{{ webhook_url }}</pre>
+    <button class="btn btn-sm" onclick="copyText(document.getElementById('webhook-url').innerText, this)">复制</button>
+  </div>
+  <div class="form-row">
+    <label>MCP 端点（交付给 WorkBuddy 等客户端）</label>
+    <pre id="mcp-url">{{ mcp_url }}</pre>
+    <button class="btn btn-sm" onclick="copyText(document.getElementById('mcp-url').innerText, this)">只复制 MCP 地址</button>
+    <button class="btn btn-sm" onclick="copyConfig()">复制完整配置</button>
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="font-size:15px;margin:0 0 16px;">连接测试</h3>
+  <button class="btn btn-primary btn-sm"
+          hx-post="/admin/tenants/{{ tenant.id }}/chanjet/test"
+          hx-target="#conn-result" hx-swap="innerHTML"
+          hx-indicator="#conn-loading">测试 T+PLUS 连接</button>
+  <span id="conn-loading" class="htmx-indicator muted">测试中…</span>
+  <div id="conn-result" style="margin-top:12px;"></div>
+</div>
+
+<div class="card">
+  <h3 style="font-size:15px;margin:0 0 16px;">MCP Key 管理</h3>
+  {% if mcp_keys %}
+  <table>
+    <thead><tr><th>名称</th><th>前缀</th><th>状态</th><th>最后调用</th><th>操作</th></tr></thead>
+    <tbody>
+      {% for k in mcp_keys %}
+      <tr>
+        <td>{{ k.client_name }}</td>
+        <td class="mono">{{ k.key_prefix }}…</td>
+        <td>
+          {% if k.revoked_at %}<span class="tag tag-off">已吊销</span>
+          {% elif k.enabled %}<span class="tag tag-ok">正常</span>
+          {% else %}<span class="tag tag-off">已停用</span>{% endif %}
+        </td>
+        <td class="muted">{{ k.last_used_at or '从未' }}</td>
+        <td>
+          {% if not k.revoked_at %}
+          <form method="post" action="/admin/mcp-keys/{{ k.id }}/revoke" style="display:inline;"
+                onsubmit="return confirm('吊销后该 Key 立即失效，确认？');">
+            <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
+            <button class="btn btn-sm btn-danger" type="submit">吊销</button>
+          </form>
+          {% else %}<span class="muted">—</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">尚无 MCP Key。</p>
+  {% endif %}
+
+  <details style="margin-top:16px;" {% if not mcp_keys %}open{% endif %}>
+    <summary style="cursor:pointer;color:#2f6fed;">生成新 MCP Key</summary>
+    <form method="post" action="/admin/tenants/{{ tenant.id }}/mcp-keys" style="margin-top:12px;">
+      <div class="form-row">
+        <label>Key 名称 <span class="req">*</span></label>
+        <input name="client_name" placeholder="如 WorkBuddy正式" required>
+        <div class="hint">用于区分该客户在不同场景使用的 Key</div>
+      </div>
+      <div class="form-row">
+        <label>工具权限（勾选开放的查询能力）</label>
+        {% for s in scope_catalog %}
+        <label style="display:block;font-weight:normal;margin:4px 0;">
+          <input type="checkbox" name="scopes" value="{{ s.scope }}"
+                 {% if s.scope in default_scopes %}checked{% endif %}
+                 style="width:auto;margin-right:6px;">
+          {{ s.label }}
+          <span class="muted">（{{ s.tools|join(', ') }}）</span>
+        </label>
+        {% endfor %}
+      </div>
+      <button class="btn btn-primary btn-sm" type="submit">生成 Key</button>
+    </form>
+  </details>
+</div>
+
+<script>
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(function () {
+    var old = btn.innerText; btn.innerText = '已复制'; setTimeout(function(){ btn.innerText = old; }, 1500);
+  });
+}
+function copyConfig() {
+  {% if new_key %}
+  var keyValue = {{ new_key.plain_key | tojson }};
+  {% else %}
+  var keyValue = "<请填入已保存的 MCP Key>";
+  {% endif %}
+  var config = {
+    mcpServers: {
+      "tplus-{{ tenant.client_code|lower }}": {
+        type: "streamable-http",
+        url: "{{ mcp_url }}",
+        headers: { Authorization: "Bearer " + keyValue }
+      }
+    }
+  };
+  navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+  alert('完整配置已复制到剪贴板');
+}
+function renderConnResult(evt) {
+  var target = evt.detail.target;
+  if (target.id !== 'conn-result') return;
+  try {
+    var data = JSON.parse(evt.detail.xhr.responseText);
+    var html = '<table style="box-shadow:none;">';
+    data.steps.forEach(function (s) {
+      var icon = s.ok ? '<span class="tag tag-ok">✓</span>' : '<span class="tag tag-off">✗</span>';
+      var code = s.code ? ' <span class="muted mono">[' + s.code + ']</span>' : '';
+      html += '<tr><td style="width:40px;">' + icon + '</td><td>' + s.name + '</td><td class="muted">' + (s.detail || '') + code + '</td></tr>';
+    });
+    html += '</table>';
+    target.innerHTML = html;
+  } catch (e) { /* 保留原始响应 */ }
+}
+document.body.addEventListener('htmx:afterRequest', renderConnResult);
+</script>
+{% endblock %}

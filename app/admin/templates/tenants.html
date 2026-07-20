@@ -1,0 +1,47 @@
+{% extends "dash.html" %}
+{% set active = "tenants" %}
+
+{% block title %}客户管理{% endblock %}
+{% block heading %}<h2 style="margin:0;font-size:18px;">客户管理</h2>{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+  <div class="muted">
+    共 {{ stats.total }} 个客户 ·
+    正常 {{ stats.normal }} 个 · 待授权 {{ stats.pending }} 个 · 已停用 {{ stats.disabled }} 个
+  </div>
+  <a href="/admin/tenants/new" class="btn btn-primary">＋ 添加客户</a>
+</div>
+
+{% if tenants %}
+<table>
+  <thead>
+    <tr>
+      <th>客户编码</th><th>客户名称</th><th>授权状态</th>
+      <th>MCP 状态</th><th>最后调用</th><th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in tenants %}
+    <tr>
+      <td class="mono">{{ t.client_code }}</td>
+      <td><a href="/admin/tenants/{{ t.id }}">{{ t.client_name }}</a></td>
+      <td>
+        {% if t.auth_status == 'authorized' %}<span class="tag tag-ok">已授权</span>
+        {% elif t.auth_status == 'expired' %}<span class="tag tag-warn">授权失效</span>
+        {% else %}<span class="tag tag-warn">待授权</span>{% endif %}
+      </td>
+      <td>
+        {% if t.enabled %}<span class="tag tag-ok">正常</span>
+        {% else %}<span class="tag tag-off">已停用</span>{% endif %}
+      </td>
+      <td class="muted">{{ t.last_used_at or '--' }}</td>
+      <td><a href="/admin/tenants/{{ t.id }}">配置</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="card muted">还没有客户，点击右上角「添加客户」开始。</div>
+{% endif %}
+{% endblock %}

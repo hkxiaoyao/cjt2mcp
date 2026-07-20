@@ -1,0 +1,22 @@
+services:
+  cjt2mcp:
+    build: .
+    image: cjt2mcp:latest
+    container_name: cjt2mcp
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # 平台级机密：全部走 env（租户畅捷通凭据在后台录入并加密入库，不在此）
+      # 生成：python -c "import os,base64; print(base64.b64encode(os.urandom(32)).decode())"
+      MASTER_KEY: "${MASTER_KEY}"
+      ADMIN_USERNAME: "${ADMIN_USERNAME:-admin}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD}"
+      # 生成：python -c "import secrets; print(secrets.token_hex(32))"
+      SESSION_SECRET: "${SESSION_SECRET}"
+      PUBLIC_BASE_URL: "${PUBLIC_BASE_URL:-https://mcp.example.com}"
+      DB_PATH: "/app/data/cjt2mcp.db"
+      SESSION_MAX_AGE_MINUTES: "${SESSION_MAX_AGE_MINUTES:-480}"
+    volumes:
+      # SQLite 持久化：容器重建不丢配置/授权/Key
+      - ./data:/app/data

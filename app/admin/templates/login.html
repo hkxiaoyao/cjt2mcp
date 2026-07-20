@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}登录 · 畅捷通 MCP 后台{% endblock %}
+
+{% block body %}
+<div style="display:flex; align-items:center; justify-content:center; min-height:100vh;">
+  <div class="card" style="width:340px;">
+    <h2 style="margin:0 0 20px; font-size:18px;">畅捷通 MCP 管理后台</h2>
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+    <form method="post" action="/admin/login">
+      <div class="form-row">
+        <label>用户名</label>
+        <input type="text" name="username" autofocus required>
+      </div>
+      <div class="form-row">
+        <label>密码</label>
+        <input type="password" name="password" required>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;">登录</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

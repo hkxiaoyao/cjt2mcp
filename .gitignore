@@ -1,0 +1,43 @@
+# ===== 敏感信息 · 严禁入库 =====
+账号密码相关*.txt
+*.txt.bak
+.env
+.env.*
+!.env.example
+*credentials*
+*secret*
+*.pem
+*.key
+*.pfx
+certificate*
+
+# ===== SQLite 数据库 =====
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+data/
+!data/.gitkeep
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ===== 日志/临时 =====
+*.log
+logs/
+tmp/
+.DS_Store
+
+# ===== IDE =====
+.idea/
+.vscode/

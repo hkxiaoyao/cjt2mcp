@@ -1,0 +1,68 @@
+{% extends "dash.html" %}
+{% set active = "tenants" %}
+
+{% block title %}添加客户{% endblock %}
+{% block heading %}<h2 style="margin:0;font-size:18px;">添加客户</h2>{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:720px;">
+  {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+  <form method="post" action="/admin/tenants">
+    <h3 style="font-size:15px;margin:0 0 16px;">基本信息</h3>
+    <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="form-row">
+        <label>客户名称 <span class="req">*</span></label>
+        <input name="client_name" value="{{ form.client_name or '' }}" required>
+      </div>
+      <div class="form-row">
+        <label>客户编码 <span class="req">*</span></label>
+        <input name="client_code" value="{{ form.client_code or '' }}"
+               placeholder="ZYSL" required>
+        <div class="hint">字母、数字、横线；全局唯一；创建后不可修改</div>
+      </div>
+      <div class="form-row">
+        <label>联系人</label>
+        <input name="contact" value="{{ form.contact or '' }}">
+      </div>
+      <div class="form-row">
+        <label>联系电话</label>
+        <input name="phone" value="{{ form.phone or '' }}">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>备注</label>
+      <textarea name="remark" rows="2">{{ form.remark or '' }}</textarea>
+    </div>
+
+    <h3 style="font-size:15px;margin:20px 0 16px;">畅捷通自建应用凭据</h3>
+    <div class="hint" style="margin-bottom:16px;color:#8a8f99;">
+      该租户在畅捷通开放平台的独立自建应用凭据。appSecret / 消息秘钥 / certificate
+      将加密入库，保存后页面不再回显明文。可留空稍后在详情页补录。
+    </div>
+    <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="form-row">
+        <label>AppKey</label>
+        <input name="app_key" value="{{ form.app_key or '' }}" placeholder="0aMlbJaE">
+      </div>
+      <div class="form-row">
+        <label>AppSecret</label>
+        <input name="app_secret" type="password" autocomplete="new-password">
+      </div>
+      <div class="form-row">
+        <label>消息秘钥（encodingAesKey）</label>
+        <input name="msg_secret" type="password" autocomplete="new-password"
+               placeholder="16/24/32 字节">
+      </div>
+      <div class="form-row">
+        <label>certificate（加密证书）</label>
+        <input name="certificate" type="password" autocomplete="new-password">
+      </div>
+    </div>
+
+    <div style="margin-top:8px;">
+      <button type="submit" class="btn btn-primary">创建客户</button>
+      <a href="/admin/tenants" class="btn">取消</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

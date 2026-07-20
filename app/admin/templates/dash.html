@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="layout">
+  <aside class="sidebar">
+    <h1>畅捷通 MCP 后台</h1>
+    <nav>
+      <a href="/admin/tenants" class="{% if active == 'tenants' %}active{% endif %}">客户管理</a>
+    </nav>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div>{% block heading %}{% endblock %}</div>
+      <div class="user">
+        {% if admin %}{{ admin.username }} · <a href="/admin/logout">退出</a>{% endif %}
+      </div>
+    </div>
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}
