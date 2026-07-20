@@ -322,3 +322,72 @@ def tenant_mcp_config(request: Request, tenant_id: str, client_type: str = "work
         }
     }
     return JSONResponse(config)
+
+
+# ─────────────────────────── 基本信息编辑 ───────────────────────────
+
+@router.post("/tenants/{tenant_id}/basic")
+def tenant_update_basic(
+    request: Request,
+    tenant_id: str,
+    client_name: str = Form(...),
+    contact: str = Form(""),
+    phone: str = Form(""),
+    remark: str = Form(""),
+):
+    redirect = _require_login(request)
+    if redirect:
+        return redirect
+    if store.get_tenant(tenant_id) is None:
+        return HTMLResponse("客户不存在", status_code=404)
+    if not client_name.strip():
+        return RedirectResponse(url=f"/admin/tenants/{tenant_id}", status_code=303)
+    store.update_tenant_basic(
+        tenant_id,
+        client_name=client_name.strip(),
+        contact=contact.strip(),
+        phone=phone.strip(),
+        remark=remark.strip(),
+    )
+    return RedirectResponse(url=f"/admin/tenants/{tenant_id}", status_code=303)
+
+
+# ─────────────────────────── 可信域名 ───────────────────────────
+
+@router.post("/tenants/{tenant_id}/trusted-domain")
+async def tenant_update_trusted_domain(request: Request, tenant_id: str):
+    redirect = _require_login(request)
+    if redirect:
+        return redirect
+    if store.get_tenant(tenant_id) is None:
+        return HTMLResponse("客户不存在", status_code=404)
+
+    form = await request.form()
+    domain = (form.get("trusted_domain") or "").strip()
+
+    # 文件优先：上传了 CHANJET_CHECK.txt 就用文件内容；否则用文本框内容。
+    # 两者都为空时 check_content 保持 None，store 侧不覆盖已存内容。
+    check_content = None
+    upload = form.get("check_file")
+    if upload is not None and hasattr(upload, "read"):
+        raw = await upload.read()
+        if raw:
+            check_content = raw.decode("utf-8", errors="replace").strip()
+    if check_content is None:
+        text = form.get("check_content")
+        if text is not None and text.strip():
+            check_content = text.strip()
+
+    store.update_trusted_domain(tenant_id, domain=domain or None, check_content=check_content)
+    return RedirectResponse(url=f"/admin/tenants/{tenant_id}", status_code=303)
+
+
+# ─────────────────────────── 删除租户 ───────────────────────────
+
+@router.post("/tenants/{tenant_id}/delete")
+def tenant_delete(request: Request, tenant_id: str):
+    redirect = _require_login(request)
+    if redirect:
+        return redirect
+    store.delete_tenant(tenant_id)
+    return RedirectResponse(url="/admin/tenants", status_code=303)

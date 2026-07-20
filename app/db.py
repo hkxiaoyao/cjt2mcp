@@ -46,6 +46,9 @@ CREATE TABLE IF NOT EXISTS tenants (
     -- 待处理的企业临时授权码（webhook 收到后暂存，阶段 4 换取 certificate；10 分钟有效）
     pending_auth_code       TEXT,
     pending_auth_code_at    TEXT,
+    -- 可信域名（ISV 级配置，反代到本服务）+ 所有权验证文件内容（平台拨测 /CHANJET_CHECK.txt）
+    trusted_domain          TEXT,
+    trusted_check_content   TEXT,
     -- 默认账套
     default_account_key TEXT,
     created_at          TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -139,6 +142,9 @@ def get_conn() -> Iterator[sqlite3.Connection]:
 # CREATE TABLE IF NOT EXISTS 不会给已存在的表补列，故新增列须在此登记。
 _COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
     ("tenants", "pending_auth_code", "TEXT"),
+    ("tenants", "pending_auth_code_at", "TEXT"),
+    ("tenants", "trusted_domain", "TEXT"),
+    ("tenants", "trusted_check_content", "TEXT"),
 ]
 
 

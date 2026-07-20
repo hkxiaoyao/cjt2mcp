@@ -96,6 +96,41 @@
 </div>
 
 <div class="card">
+  <h3 style="font-size:15px;margin:0 0 16px;">可信域名</h3>
+  <p class="muted" style="margin:0 0 12px;">
+    畅捷通平台会不定期拨测 <span class="mono">http://&lt;域名&gt;/CHANJET_CHECK.txt</span>，
+    本服务按域名返回下方验证文件内容供校验。请在 Nginx 把该域名反代到本服务。
+  </p>
+  <table>
+    <tr><th style="width:160px;">当前可信域名</th><td class="mono">{{ tenant.trusted_domain or '— 未配置' }}</td></tr>
+    <tr><th>验证文件</th><td>
+      {% if tenant.trusted_check_content %}<span class="tag tag-ok">已配置</span>{% else %}<span class="tag tag-off">未配置</span>{% endif %}
+    </td></tr>
+    {% if tenant.trusted_domain %}
+    <tr><th>拨测地址</th><td class="mono">http://{{ tenant.trusted_domain }}/CHANJET_CHECK.txt</td></tr>
+    {% endif %}
+  </table>
+  <details style="margin-top:12px;">
+    <summary style="cursor:pointer;color:#2f6fed;">配置可信域名</summary>
+    <form method="post" action="/admin/tenants/{{ tenant.id }}/trusted-domain" enctype="multipart/form-data" style="margin-top:12px;">
+      <div class="form-row">
+        <label>可信域名（如 sdfx.hacka.cn，可带端口）</label>
+        <input type="text" name="trusted_domain" value="{{ tenant.trusted_domain or '' }}" placeholder="sdfx.hacka.cn">
+      </div>
+      <div class="form-row">
+        <label>上传 CHANJET_CHECK.txt（上传新文件将覆盖原内容；不选则保留）</label>
+        <input type="file" name="check_file" accept=".txt,text/plain">
+      </div>
+      <div class="form-row">
+        <label>或直接粘贴验证文件内容</label>
+        <textarea name="check_content" rows="3" placeholder="粘贴 CHANJET_CHECK.txt 的内容"></textarea>
+      </div>
+      <button class="btn btn-primary btn-sm" type="submit">保存可信域名</button>
+    </form>
+  </details>
+</div>
+
+<div class="card">
   <h3 style="font-size:15px;margin:0 0 16px;">连接测试</h3>
   <button class="btn btn-primary btn-sm"
           hx-post="/admin/tenants/{{ tenant.id }}/chanjet/test"

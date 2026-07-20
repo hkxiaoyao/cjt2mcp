@@ -403,3 +403,42 @@ def list_call_logs(tenant_id: str | None = None, limit: int = 100) -> list[dict[
                 "SELECT * FROM call_logs ORDER BY created_at DESC LIMIT ?", (limit,)
             ).fetchall()
         return [dict(r) for r in rows]
+
+
+def update_trusted_domain(tenant_id: str, *, domain: str | None, check_content: str | None) -> None:
+    """更新可信域名与验证文件内容。
+
+    domain：传入即更新（空字符串→清空）。
+    check_content：None 表示保持原内容不变（只改域名时不清空文件）；
+                   传入字符串则覆盖（含空串→清空）。
+    """
+    now = _now()
+    sets = ["trusted_domain = ?"]
+    params: list[Any] = [(domain or "").strip().lower() or None]
+    if check_content is not None:
+        sets.append("trusted_check_content = ?")
+        params.append(check_content)
+    sets.append("updated_at = ?")
+    params.append(now)
+    params.append(tenant_id)
+    with get_conn() as conn:
+        conn.execute(f"UPDATE tenants SET {', '.join(sets)} WHERE id = ?", params)
+
+
+def get_tenant_by_domain(domain: str) -> dict[str, Any] | None:
+    """按可信域名查租户（供平台拨测 /CHANJET_CHECK.txt 时定位）。"""
+    d = (domain or "").strip().lower()
+    if not d:
+        return None
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM tenants WHERE trusted_domain = ?", (d,)).fetchone()
+        return dict(row) if row else None
+
+
+def delete_tenant(tenant_id: str) -> None:
+    """删除租户及其级联数据（mcp_clients/account_sets/call_logs）。"""
+    with get_conn() as conn:
+        conn.execute("DELETE FROM mcp_clients WHERE tenant_id = ?", (tenant_id,))
+        conn.execute("DELETE FROM account_sets WHERE tenant_id = ?", (tenant_id,))
+        conn.execute("DELETE FROM call_logs WHERE tenant_id = ?", (tenant_id,))
+        conn.execute("DELETE FROM tenants WHERE id = ?", (tenant_id,))

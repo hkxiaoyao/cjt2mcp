@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import PlainTextResponse, RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.admin.routes import router as admin_router
@@ -17,6 +17,7 @@ from app.chanjet.webhook import router as webhook_router
 from app.mcpsrv.server import router as mcp_router
 from app.config import get_settings
 from app.db import init_db
+from app import store
 from app.store import ensure_initial_admin
 
 
@@ -53,3 +54,17 @@ def health() -> dict:
 @app.get("/")
 def root():
     return RedirectResponse(url="/admin/tenants", status_code=303)
+
+
+@app.get("/CHANJET_CHECK.txt", response_class=PlainTextResponse)
+def chanjet_check(request: Request):
+    """畅捷通可信域名拨测端点（公开，无需登录）。
+
+    平台访问 http://<可信域名>/CHANJET_CHECK.txt 校验所有权。
+    按请求 Host 头（去端口）定位租户，返回其上传的验证文件内容。
+    """
+    host = (request.headers.get("host") or "").split(":")[0].strip().lower()
+    tenant = store.get_tenant_by_domain(host) if host else None
+    if tenant is None or not tenant.get("trusted_check_content"):
+        return PlainTextResponse("Not Found", status_code=404)
+    return PlainTextResponse(tenant["trusted_check_content"])
