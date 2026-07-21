@@ -170,27 +170,10 @@ def tenant_detail(request: Request, tenant_id: str):
     if redirect:
         return redirect
 
-    tenant = store.get_tenant(tenant_id)
-    if tenant is None:
+    if store.get_tenant(tenant_id) is None:
         return HTMLResponse("客户不存在", status_code=404)
 
-    settings = get_settings()
-    base = settings.public_base_url.rstrip("/")
-    return templates.TemplateResponse(
-        request,
-        "tenant_detail.html",
-        {
-            "admin": current_admin(request),
-            "tenant": tenant,
-            "cred_status": store.credential_status(tenant),
-            "webhook_url": f"{base}/webhook/chanjet/{tenant['client_code']}",
-            "mcp_url": f"{base}/chanjet/{tenant['client_code']}/mcp",
-            "mcp_keys": store.list_mcp_keys(tenant_id),
-            "scope_catalog": tools.SCOPE_CATALOG,
-            "default_scopes": tools.DEFAULT_READONLY_SCOPES,
-            "new_key": None,
-        },
-    )
+    return _render_detail(request, tenant_id)
 
 
 def _compute_ticket_info(tenant: dict) -> dict:
