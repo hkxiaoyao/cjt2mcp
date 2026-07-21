@@ -36,7 +36,13 @@
         {% else %}<span class="tag tag-off">已停用</span>{% endif %}
       </td>
       <td class="muted">{{ t.last_used_at or '--' }}</td>
-      <td><a href="/admin/tenants/{{ t.id }}">配置</a></td>
+      <td>
+        <a href="/admin/tenants/{{ t.id }}">配置</a>
+        <form method="post" action="/admin/tenants/{{ t.id }}/delete" style="display:inline;margin-left:8px;"
+              onsubmit="return confirm('确认删除客户 {{ t.client_name }}？将一并删除其 MCP Key、账套和调用日志，不可恢复。');">
+          <button type="submit" class="btn btn-sm" style="color:#d83931;border-color:#f0c2c0;">删除</button>
+        </form>
+      </td>
     </tr>
     {% endfor %}
   </tbody>
