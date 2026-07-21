@@ -44,6 +44,22 @@
       {% elif tenant.auth_status == 'expired' %}<span class="tag tag-warn">授权失效</span>
       {% else %}<span class="tag tag-warn">待授权</span>{% endif %}
     </td></tr>
+    <tr><th>appTicket</th><td>
+      {% if ticket_info.state == 'none' %}
+        <span class="tag tag-warn">未收到</span>
+        <span class="muted" style="font-size:12px;">等待平台推送（每 10 分钟一次，需 webhook 公网可达）</span>
+      {% elif ticket_info.state == 'fresh' %}
+        <span class="tag tag-ok">正常</span>
+        <span class="mono" style="font-size:12px;">{{ ticket_info.prefix }}…</span>
+        <span class="muted" style="font-size:12px;">· {{ ticket_info.beijing }} 更新（{{ ticket_info.mins }} 分钟前）</span>
+      {% elif ticket_info.state == 'stale' %}
+        <span class="tag tag-warn">已过期</span>
+        <span class="mono" style="font-size:12px;">{{ ticket_info.prefix }}…</span>
+        <span class="muted" style="font-size:12px;">· {{ ticket_info.beijing }} 更新（{{ ticket_info.mins }} 分钟前，超 30 分钟）</span>
+      {% else %}
+        <span class="tag tag-off">时间解析异常</span>
+      {% endif %}
+    </td></tr>
   </table>
   <details style="margin-top:12px;">
     <summary style="cursor:pointer;color:#2f6fed;">编辑基本信息</summary>

@@ -193,6 +193,30 @@ def tenant_detail(request: Request, tenant_id: str):
     )
 
 
+def _compute_ticket_info(tenant: dict) -> dict:
+    """计算 appTicket 新鲜度供页面展示。
+
+    appTicket 有效期 30 分钟，平台每 10 分钟推送一次；据 ticket_updated_at
+    判断是否新鲜（fresh/stale/none/error），并给出脱敏前缀与北京时间。
+    """
+    from datetime import datetime, timedelta, timezone
+
+    raw = tenant.get("app_ticket")
+    updated = tenant.get("ticket_updated_at")
+    if not raw or not updated:
+        return {"state": "none", "prefix": None, "beijing": None, "mins": None}
+    try:
+        dt = datetime.fromisoformat(updated)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        mins = int((datetime.now(timezone.utc) - dt).total_seconds() / 60)
+        beijing = dt.astimezone(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S")
+        state = "fresh" if mins <= 30 else "stale"
+        return {"state": state, "prefix": raw[:20], "beijing": beijing, "mins": mins}
+    except (TypeError, ValueError):
+        return {"state": "error", "prefix": raw[:20], "beijing": None, "mins": None}
+
+
 def _render_detail(request: Request, tenant_id: str, *, new_key=None, status_code: int = 200):
     """渲染详情页（生成 Key 后带一次性明文 new_key）。"""
     tenant = store.get_tenant(tenant_id)
@@ -207,6 +231,7 @@ def _render_detail(request: Request, tenant_id: str, *, new_key=None, status_cod
             "admin": current_admin(request),
             "tenant": tenant,
             "cred_status": store.credential_status(tenant),
+            "ticket_info": _compute_ticket_info(tenant),
             "webhook_url": f"{base}/webhook/chanjet/{tenant['client_code']}",
             "mcp_url": f"{base}/chanjet/{tenant['client_code']}/mcp",
             "mcp_keys": store.list_mcp_keys(tenant_id),
