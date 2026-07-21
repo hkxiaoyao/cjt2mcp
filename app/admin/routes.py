@@ -180,7 +180,7 @@ def _compute_ticket_info(tenant: dict) -> dict:
     """计算 appTicket 新鲜度供页面展示。
 
     appTicket 有效期 30 分钟，平台每 10 分钟推送一次；据 ticket_updated_at
-    判断是否新鲜（fresh/stale/none/error），并给出脱敏前缀与北京时间。
+    判断是否新鲜（fresh/stale/none/error），并给出 appTicket 值与北京时间。
     """
     from datetime import datetime, timedelta, timezone
 
@@ -195,9 +195,9 @@ def _compute_ticket_info(tenant: dict) -> dict:
         mins = int((datetime.now(timezone.utc) - dt).total_seconds() / 60)
         beijing = dt.astimezone(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S")
         state = "fresh" if mins <= 30 else "stale"
-        return {"state": state, "prefix": raw[:20], "beijing": beijing, "mins": mins}
+        return {"state": state, "prefix": raw, "beijing": beijing, "mins": mins}
     except (TypeError, ValueError):
-        return {"state": "error", "prefix": raw[:20], "beijing": None, "mins": None}
+        return {"state": "error", "prefix": raw, "beijing": None, "mins": None}
 
 
 def _render_detail(request: Request, tenant_id: str, *, new_key=None, status_code: int = 200):
